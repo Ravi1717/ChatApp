@@ -10,6 +10,19 @@ const app = express();
 const botName = 'ChatCord Bot';
 
 const server = http.createServer(app);
+
+const bodyParser = require('body-parser');
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }));
+require("dotenv").config();
+
+
+// import{models} from './database';
+
+const {models, sequelize} = require('./database');
+
+console.log('model', models)
+
 const io = socketio(server);
 
 //set static folder
@@ -22,6 +35,15 @@ io.on('connection', socket =>{
     socket.on('joinRoom', ({username, room})=>{
         console.log('socket id', socket.id);
         const user = userJoin(socket.id, username, room);
+
+           const chatUser = models.chatUser.create(
+              {
+                socketId:socket.id,
+                username: username,
+                room:room
+              },
+            );
+          
 
         socket.join(user.room);
 
@@ -64,6 +86,10 @@ io.on('connection', socket =>{
 
 const PORT = 3000 || process.env.PORT;
 
-server.listen(PORT, ()=>{
-    console.log(`Server running on port ${PORT} `)
-})
+const eraseDatabaseOnSync = true;
+
+sequelize.sync({force: true}).then(() => {
+    server.listen(process.env.PORT, () => {
+      console.log(`Example app listening on port ${process.env.PORT}!`);
+    });
+  });
